@@ -1,0 +1,8 @@
+{
+  "name": "vorsorge-regeln-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "German estate planning with sources: notary fees under the GNotKG, inheritance shares and compulsory portions, registry fees and deadlines, official emergency folders by district.",
+  "homepage": "https://vorsorge-regeln.de/ki-assistenten.html",
+  "license": "UNLICENSED"
+}

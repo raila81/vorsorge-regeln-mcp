@@ -1,0 +1,577 @@
+{
+  "cloudEndpoint": "https://vorsorge-regeln.de/mcp.php?src=mcp",
+  "description": "German estate planning with sources: notary fees under the GNotKG, inheritance shares and compulsory portions, registry fees and deadlines, official emergency folders by district.",
+  "homepage": "https://vorsorge-regeln.de",
+  "identifier": "vorsorge-regeln",
+  "name": "Vorsorge-Regeln",
+  "prompts": [],
+  "resources": [],
+  "tools": [
+    {
+      "name": "notarkosten_berechnen",
+      "title": "Notarkosten berechnen",
+      "description": "Use when someone asks what a German notary charges for a will or a power of attorney: \"Was kostet ein Testament beim Notar\", \"Notarkosten Vorsorgevollmacht\", \"Berliner Testament Notar Kosten\", \"Erbvertrag Kosten\", \"Vollmacht beglaubigen lassen Kosten\". Computes the fee under the German court and notary fees act (GNotKG, Tabelle B, as amended 2025) from the document type and the assets in euros: business value (Geschäftswert), fee rate, minimum fees, postage flat rate (Nr. 32005 KV), 19 % VAT and the total. For wills it also compares notary, lawyer and handwritten will with court custody and register fees. Only the document type and an amount are needed; never ask for a name or other personal details.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "dokument": {
+            "type": "string",
+            "enum": [
+              "testament",
+              "gemeinschaftliches_testament",
+              "vorsorgevollmacht_beurkundet",
+              "vorsorgevollmacht_beglaubigt"
+            ],
+            "description": "testament = Einzeltestament; gemeinschaftliches_testament = Berliner Testament oder Erbvertrag (2,0-Gebühr); vorsorgevollmacht_beurkundet = notarielle Beurkundung; vorsorgevollmacht_beglaubigt = nur Unterschriftsbeglaubigung unter einem fertigen Text."
+          },
+          "vermoegen": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000,
+            "description": "Vermögen in Euro (Aktivvermögen, bei Ehepaaren gemeinsam). Eine Schätzung genügt."
+          },
+          "schulden": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000,
+            "description": "Schulden in Euro, optional. Zählen nur beim Testament, höchstens bis zur Hälfte des Vermögens (§ 102 GNotKG)."
+          }
+        },
+        "required": [
+          "dokument",
+          "vermoegen"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "dokument": {
+            "type": "string"
+          },
+          "dokument_text": {
+            "type": "string"
+          },
+          "vermoegen": {
+            "type": "number"
+          },
+          "schulden": {
+            "type": "number"
+          },
+          "geschaeftswert": {
+            "type": "number"
+          },
+          "gebuehrensatz": {
+            "type": "string"
+          },
+          "gebuehr": {
+            "type": "number"
+          },
+          "auslagenpauschale": {
+            "type": "number"
+          },
+          "netto": {
+            "type": "number"
+          },
+          "umsatzsteuer": {
+            "type": "number"
+          },
+          "brutto": {
+            "type": "number"
+          },
+          "hoechstbetrag": {
+            "type": "boolean"
+          },
+          "hinweise": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "vergleich": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object",
+              "properties": {
+                "weg": {
+                  "type": "string"
+                },
+                "kosten": {
+                  "type": "string"
+                },
+                "erklaerung": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "weg",
+                "kosten",
+                "erklaerung"
+              ]
+            }
+          },
+          "rechner_url": {
+            "type": "string"
+          },
+          "quellen": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "thema": {
+                  "type": "string"
+                },
+                "wert": {
+                  "type": "string"
+                },
+                "quelle": {
+                  "type": "string"
+                },
+                "quelle_url": {
+                  "type": "string"
+                },
+                "geprueft": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "thema",
+                "wert",
+                "quelle",
+                "quelle_url",
+                "geprueft"
+              ]
+            }
+          },
+          "disclaimer": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "dokument",
+          "geschaeftswert",
+          "gebuehr",
+          "netto",
+          "umsatzsteuer",
+          "brutto",
+          "hoechstbetrag",
+          "hinweise",
+          "rechner_url",
+          "quellen",
+          "disclaimer"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "title": "Notarkosten berechnen"
+      }
+    },
+    {
+      "name": "erbquoten_berechnen",
+      "title": "Erbquoten und Pflichtteil berechnen",
+      "description": "Use when someone asks who inherits without a will in Germany and how much: \"Wer erbt ohne Testament\", \"gesetzliche Erbfolge Ehefrau Kinder\", \"Erbquote Ehegatte\", \"Pflichtteil berechnen\", \"erben Geschwister\". Returns the statutory shares and compulsory portions (Pflichtteil) under §§ 1924 to 1926, 1931, 1371 and 2303 BGB for spouse, children, parents and siblings, as fractions and percentages with the paragraphs. Inputs are only marital status, matrimonial property regime and the number of living relatives; never ask for names. The calculator stops at the third order (grandparents and their descendants).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "verheiratet": {
+            "type": "boolean",
+            "description": "War die verstorbene Person verheiratet oder in eingetragener Lebenspartnerschaft?"
+          },
+          "gueterstand": {
+            "type": "string",
+            "enum": [
+              "zugewinngemeinschaft",
+              "guetertrennung",
+              "guetergemeinschaft"
+            ],
+            "description": "Nur bei verheiratet. Ohne Ehevertrag gilt die Zugewinngemeinschaft (Standard)."
+          },
+          "kinder": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20,
+            "description": "Zahl der lebenden Kinder."
+          },
+          "eltern": {
+            "type": "string",
+            "enum": [
+              "beide",
+              "einer",
+              "keiner"
+            ],
+            "description": "Nur ohne Kinder: Leben die Eltern noch?"
+          },
+          "geschwister": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20,
+            "description": "Nur ohne Kinder und wenn nicht beide Eltern leben: Zahl der Geschwister."
+          },
+          "grosseltern": {
+            "type": "boolean",
+            "description": "Nur verheiratet, ohne Kinder, Eltern und Geschwister: Lebt noch mindestens ein Großelternteil?"
+          }
+        },
+        "required": [
+          "verheiratet",
+          "kinder"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "eingaben": {
+            "type": "object"
+          },
+          "erben": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "wer": {
+                  "type": "string"
+                },
+                "anzahl": {
+                  "type": "integer"
+                },
+                "erbquote": {
+                  "type": "string"
+                },
+                "erbquote_prozent": {
+                  "type": "number"
+                },
+                "paragrafen": {
+                  "type": "string"
+                },
+                "pflichtteil": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "pflichtteil_prozent": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "pflichtteil_paragrafen": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "wer",
+                "anzahl",
+                "erbquote",
+                "erbquote_prozent",
+                "paragrafen",
+                "pflichtteil"
+              ]
+            }
+          },
+          "hinweise": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rechner_endet": {
+            "type": "boolean"
+          },
+          "rechner_url": {
+            "type": "string"
+          },
+          "disclaimer": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "erben",
+          "hinweise",
+          "rechner_endet",
+          "rechner_url",
+          "disclaimer"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "title": "Erbquoten und Pflichtteil berechnen"
+      }
+    },
+    {
+      "name": "vorsorge_fakten",
+      "title": "Belegte Fakten zu Vorsorge und Erbe",
+      "description": "Use for German fees, deadlines and rules on estate planning documents and inheritance, instead of answering from memory: Zentrales Vorsorgeregister fees, 10-euro certification of a Vorsorgevollmacht at the Betreuungsbehörde (§ 7 BtOG), official BMJ forms, Betreuungsverfügung, testament custody and register fees, will opening fee, deadline to disclaim an inheritance, inheritance tax allowances, notary fee rules. Every fact carries its legal source, an official link and the date it was checked. Topics: betreuungsverfuegung, erbfall_fristen, erbschaftsteuer, notarkosten, patientenverfuegung, testament, vorsorgeregister, vorsorgevollmacht.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "thema": {
+            "type": "string",
+            "enum": [
+              "betreuungsverfuegung",
+              "erbfall_fristen",
+              "erbschaftsteuer",
+              "notarkosten",
+              "patientenverfuegung",
+              "testament",
+              "vorsorgeregister",
+              "vorsorgevollmacht"
+            ],
+            "description": "Thema."
+          }
+        },
+        "required": [
+          "thema"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "thema": {
+            "type": "string"
+          },
+          "titel": {
+            "type": "string"
+          },
+          "fakten": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "thema": {
+                  "type": "string"
+                },
+                "wert": {
+                  "type": "string"
+                },
+                "quelle": {
+                  "type": "string"
+                },
+                "quelle_url": {
+                  "type": "string"
+                },
+                "geprueft": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "thema",
+                "wert",
+                "quelle",
+                "quelle_url",
+                "geprueft"
+              ]
+            }
+          },
+          "stand": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "info_url": {
+            "type": "string"
+          },
+          "disclaimer": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "thema",
+          "titel",
+          "fakten",
+          "info_url",
+          "disclaimer"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "title": "Belegte Fakten zu Vorsorge und Erbe"
+      }
+    },
+    {
+      "name": "notfallmappe_finden",
+      "title": "Kostenlose Notfallmappe finden",
+      "description": "Use when someone looks for a free emergency or estate planning folder (Notfallmappe, Vorsorgemappe, Notfallordner) from their district, city or state in Germany: \"Notfallmappe kostenlos Landkreis Passau\", \"Vorsorgemappe Frankfurt PDF\", \"Notfallordner Bayern kostenlos\". Searches the register of 55 free official folders on vorsorge-regeln.de (publisher, pages, whether the PDF is fillable, direct PDF link, check date). Without a match it lists the states covered and the free nationwide forms of the Federal Ministry of Justice. Needs only a place name or a state.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ort": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Landkreis, Kreis oder Stadt, zum Beispiel \"Passau\", \"Bodenseekreis\", \"Frankfurt am Main\"."
+          },
+          "bundesland": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Bundesland, zum Beispiel \"Bayern\" oder \"NRW\"."
+          }
+        },
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "suche": {
+            "type": "object"
+          },
+          "treffer": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kreis": {
+                  "type": "string"
+                },
+                "land": {
+                  "type": "string"
+                },
+                "herausgeber": {
+                  "type": "string"
+                },
+                "titel": {
+                  "type": "string"
+                },
+                "seiten": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "ausfuellbar": {
+                  "type": "boolean"
+                },
+                "pdf_url": {
+                  "type": "string"
+                },
+                "bezugsseite": {
+                  "type": "string"
+                },
+                "register_url": {
+                  "type": "string"
+                },
+                "geprueft": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kreis",
+                "land",
+                "herausgeber",
+                "titel",
+                "pdf_url",
+                "register_url",
+                "geprueft"
+              ]
+            }
+          },
+          "treffer_art": {
+            "type": "string",
+            "enum": [
+              "ort",
+              "bundesland",
+              "keiner"
+            ]
+          },
+          "laender": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "land": {
+                  "type": "string"
+                },
+                "anzahl": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "land",
+                "anzahl"
+              ]
+            }
+          },
+          "bundesweit": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "thema": {
+                  "type": "string"
+                },
+                "wert": {
+                  "type": "string"
+                },
+                "quelle": {
+                  "type": "string"
+                },
+                "quelle_url": {
+                  "type": "string"
+                },
+                "geprueft": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "thema",
+                "wert",
+                "quelle",
+                "quelle_url",
+                "geprueft"
+              ]
+            }
+          },
+          "register_url": {
+            "type": "string"
+          },
+          "vorlagen_url": {
+            "type": "string"
+          },
+          "disclaimer": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "treffer",
+          "treffer_art",
+          "laender",
+          "register_url",
+          "disclaimer"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "title": "Kostenlose Notfallmappe finden"
+      }
+    }
+  ]
+}
